@@ -72,6 +72,7 @@ config_sdk_tools ()
     cd android_sdk
     download tools https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
     cd ..
+    yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses
 }
 
 config_sdk_platform_tools ()
