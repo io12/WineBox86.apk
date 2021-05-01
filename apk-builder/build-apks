@@ -212,6 +212,13 @@ config_wine_tools ()
     (cd tools && ../wine/configure --without-x --enable-win64 $silent && make $makeflags __tooldeps__)
 }
 
+config_box86 ()
+{
+    git clone --depth 1 https://github.com/ptitSeb/box86
+    mkdir box86/build
+    (cd box86/build && cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DANDROID=1 -DNOLOADADDR=1 -DANDROID_ABI=armeabi-v7a -DCMAKE_TOOLCHAIN_FILE=$android_ndk/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=$android_api)
+}
+
 config_wine ()
 {
     test -d toolchain || config_toolchain
@@ -263,6 +270,22 @@ build_all ()
     (cd wine && make $makeflags)
 }
 
+jerry_rig_box86 ()
+{
+    assets_arm_bin="$destdir/assets/armeabi-v7a/bin"
+
+    # Move x86 dirs to armeabi-v7a so that ARM Android doesn't reject the APK
+    mv "$destdir/lib/x86" "$destdir/lib/armeabi-v7a"
+    mv "$destdir/assets/x86" "$destdir/assets/armeabi-v7a"
+
+    # Copy in Box86
+    cp ../../box86/build/box86 "$assets_arm_bin"
+
+    # Replace the Wine executable with a wrapper that runs the x86 Wine with Box86
+    mv "$assets_arm_bin/wine" "$assets_arm_bin/wine-x86"
+    cp "$sourcedir/wine-wrapper.sh" "$assets_arm_bin/wine"
+}
+
 install_all ()
 {
     test -d wine || config_wine
@@ -294,6 +317,8 @@ install_all ()
     $install -m 644 $sourcedir/LICENSE.txt assets-tmp/LICENSE.txt
     mv assets-tmp $destdir/assets
 
+    jerry_rig_box86
+
     (cd $destdir && gradle -q -Psrcdir=$srcdir -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxPermSize=512m" assembleDebug)
     mv $destdir/build/outputs/apk/wine-debug.apk ../../wine-${release:-debug}-$arch.apk
 }
@@ -311,6 +336,8 @@ test -d $llvm_mingw || config_llvm_mingw
 test -d wine || git clone $winetree
 test -z "$release" || (cd wine && git checkout wine-$release)
 test -d $winetools || config_wine_tools
+
+test -d box86 || config_box86
 
 arch=x86
 test -d $arch || mkdir $arch
