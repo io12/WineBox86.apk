@@ -216,7 +216,7 @@ config_box86 ()
 {
     git clone --depth 1 https://github.com/ptitSeb/box86
     mkdir box86/build
-    (cd box86/build && cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DANDROID=1 -DNOLOADADDR=1 -DANDROID_ABI=armeabi-v7a -DCMAKE_TOOLCHAIN_FILE=$android_ndk/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=$android_api)
+    (cd box86/build && cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DANDROID=1 -DNOLOADADDR=1 -DANDROID_ABI=armeabi-v7a -DCMAKE_TOOLCHAIN_FILE=../../$android_ndk/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=$android_api)
 }
 
 config_wine ()
