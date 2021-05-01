@@ -312,10 +312,10 @@ test -d wine || git clone $winetree
 test -z "$release" || (cd wine && git checkout wine-$release)
 test -d $winetools || config_wine_tools
 
-arch=arm
+arch=x86
 test -d $arch || mkdir $arch
-host=arm-linux-androideabi
-exec_prefix=armeabi-v7a
+host=i686-linux-android
+exec_prefix=x86
 
 (cd $arch
 PATH=$default_path:$basedir/$llvm_mingw/bin:$basedir/$gradle/bin:$basedir/$arch/toolchain/bin
