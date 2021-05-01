@@ -1,0 +1,58 @@
+This package contains binaries of the following free software
+packages, distributed under the terms of their respective licenses:
+
+* Wine
+  Home page: https://www.winehq.org
+  License: https://source.winehq.org/git/wine.git/blob_plain/HEAD:/LICENSE
+
+* libpng
+  Home page: http://www.libpng.org/pub/png/libpng.html
+  License: http://www.libpng.org/pub/png/src/libpng-LICENSE.txt
+
+* JPEG
+  Home page: http://www.ijg.org/
+  License: http://ijg.org/files/README
+
+* FreeType
+  Home page: https://www.freetype.org/
+  License: https://www.freetype.org/license.html
+
+* LCMS2
+  Home page: http://www.littlecms.com/
+  License: https://github.com/mm2/Little-CMS/blob/master/COPYING
+
+* TIFF
+  Home page: http://www.simplesystems.org/libtiff/
+  License: http://www.simplesystems.org/libtiff/misc.html
+
+* XML2
+  Home page: http://xmlsoft.org/
+  License: https://git.gnome.org/browse/libxml2/plain/Copyright
+
+* XSLT
+  Home page: http://xmlsoft.org/
+  License: https://git.gnome.org/browse/libxslt/plain/Copyright
+
+* GMP
+  Home page: https://gmplib.org/
+  License: https://gmplib.org/repo/gmp/file/tip/README
+
+* Nettle
+  Home page: https://www.lysator.liu.se/~nisse/nettle/
+  License: https://git.lysator.liu.se/nettle/nettle/blob/master/COPYING.LESSERv3
+
+* GnuTLS
+  Home page: https://www.gnutls.org/
+  License: https://gitlab.com/gnutls/gnutls/blob/master/LICENSE
+
+* OpenLDAP
+  Home page: https://www.openldap.org/
+  License: https://www.openldap.org/devel/gitweb.cgi?p=openldap.git;a=blob_plain;f=LICENSE;hb=HEAD
+
+* MPEG
+  Home page: https://www.mpg123.de/
+  License:  https://www.mpg123.de/cgi-bin/scm/mpg123/trunk/COPYING?revision=3418&view=markup
+
+* CUPS
+  Home page: https://www.cups.org/
+  License: https://www.cups.org/doc/license.html

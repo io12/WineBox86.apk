@@ -1,0 +1,311 @@
+#!/bin/sh
+#
+# Build Android packages
+#
+# Copyright 2018 Alexandre Julliard
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+#
+
+set -xe
+
+basedir=$PWD
+winetree=git://source.winehq.org/git/wine.git
+android_root=$basedir/android_sdk
+export ANDROID_HOME=$android_root
+android_api=26
+default_path=/usr/lib/ccache:/usr/sbin:/sbin:/usr/bin:/bin:$android_root/tools:$android_root/platform-tools
+downloads=$basedir/wine-packaging
+winetools=$basedir/tools
+silent=--silent
+makeflags="--no-print-directory $silent -j$(nproc)"
+
+android_ndk=android-ndk-r21d
+llvm_mingw=llvm-mingw-20201020-ucrt-ubuntu-18.04
+gradle=gradle-3.5.1
+png=libpng-1.6.37
+jpeg=jpeg-9d
+freetype=freetype-2.10.4
+lcms2=lcms2-2.11
+tiff=tiff-4.1.0
+xml2=libxml2-2.9.10
+xslt=libxslt-1.1.34
+gmp=gmp-6.2.1
+nettle=nettle-3.6
+gnutls=gnutls-3.7.0
+openldap=openldap-2.4.56
+mpeg=mpg123-1.26.3
+cups=cups-2.3.3
+gecko=wine-gecko-2.47.2
+
+sourcedir=$(cd $(dirname $0) && pwd)
+release=$1
+
+download ()
+{
+    test -d $downloads || mkdir -p $downloads
+    test -f $downloads/$(basename $2) || wget -O $downloads/$(basename $2) ${3:-$2}
+    rm -rf $1
+    case $2 in
+        *.zip)
+            unzip -q $downloads/$(basename $2) ;;
+        *)
+            tar xf $downloads/$(basename $2) ;;
+    esac
+}
+
+config_sdk ()
+{
+    download android_sdk https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+    download android_sdk https://dl.google.com/android/repository/platform-tools_r31.0.2-linux.zip
+}
+
+config_ndk ()
+{
+    download $android_ndk https://dl.google.com/android/repository/$android_ndk-linux-x86_64.zip
+}
+
+config_toolchain ()
+{
+    rm -rf toolchain
+    ../$android_ndk/build/tools/make_standalone_toolchain.py --arch $arch --api $android_api --install-dir toolchain
+}
+
+config_gradle ()
+{
+    download $gradle https://services.gradle.org/distributions/$gradle-bin.zip
+}
+
+config_llvm_mingw ()
+{
+    download $llvm_mingw https://github.com/mstorsjo/llvm-mingw/releases/download/20201020/$llvm_mingw.tar.xz
+}
+
+config_png ()
+{
+    download $png $png.tar.xz https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/$png.tar.xz/download
+    (cd $png && $run_configure && make $makeflags)
+}
+
+config_jpeg ()
+{
+    download $jpeg http://www.ijg.org/files/jpegsrc.v9d.tar.gz
+    (cd $jpeg && $run_configure && make $makeflags)
+    # rename libjpeg.so to avoid conflicts with the system one
+    cp $jpeg/.libs/libjpeg.so $jpeg/.libs/libwjpeg.so
+}
+
+config_freetype ()
+{
+    test -d $png || config_png
+    download $freetype http://download.savannah.gnu.org/releases/freetype/$freetype.tar.xz
+    pngdir=$(pwd)/$png
+    (cd $freetype && $run_configure LIBPNG_CFLAGS=-I$pngdir LIBPNG_LIBS="-L$pngdir/.libs -lpng16" && make $makeflags)
+}
+
+config_lcms2 ()
+{
+    version=$(expr $lcms2 : '.*-\([0-9.]\+\)$')
+    download $lcms2 $lcms2.tar.gz https://sourceforge.net/projects/lcms/files/lcms/$version/$lcms2.tar.gz/download
+    (cd $lcms2 && $run_configure && make $makeflags)
+}
+
+config_tiff ()
+{
+    download $tiff https://download.osgeo.org/libtiff/$tiff.zip
+    cp ../wine/tools/config.sub ../wine/tools/config.guess $tiff/config
+    (cd $tiff && $run_configure && make $makeflags)
+}
+
+config_xml2 ()
+{
+    download $xml2 ftp://xmlsoft.org/libxml2/$xml2.tar.gz
+    (cd $xml2 && $run_configure --without-python && make $makeflags libxml2.la)
+}
+
+config_xslt ()
+{
+    test -d $xml2 || config_xml2
+    download $xslt ftp://xmlsoft.org/libxml2/$xslt.tar.gz
+    (cd $xslt && $run_configure --without-python --with-libxml-src=../$xml2 && make $makeflags)
+}
+
+config_gmp ()
+{
+    download $gmp https://gmplib.org/download/gmp/$gmp.tar.xz
+    (cd $gmp && $run_configure --disable-static && make $makeflags)
+}
+
+config_nettle ()
+{
+    test -d $gmp || config_gmp
+    download $nettle https://ftp.gnu.org/gnu/nettle/$nettle.tar.gz
+    gmpdir=$(pwd)/$gmp
+    (cd $nettle && $run_configure --disable-shared --disable-documentation CPPFLAGS=-I$gmpdir LDFLAGS=-L$gmpdir/.libs && make $makeflags)
+}
+
+config_gnutls ()
+{
+    test -d $nettle || config_nettle
+    version=v$(expr $gnutls : '.*-\([0-9]\+\.[0-9]\+\)')
+    download $gnutls https://www.gnupg.org/ftp/gcrypt/gnutls/$version/$gnutls.tar.xz
+    gmpdir=$(pwd)/$gmp
+    nettledir=$(pwd)/$nettle
+    test -f $nettle/nettle || ln -s . $nettle/nettle  # gnutls includes nettle files with nettle/ prefix
+    (cd $gnutls && ./configure --host=$host --without-p11-kit --without-idn --with-included-libtasn1 --with-included-unistring -disable-cxx \
+                               --disable-maintainer-mode --disable-static --disable-doc --disable-tools --disable-tests \
+                               CC=$cc PKG_CONFIG=true \
+                               GMP_CFLAGS="-I$gmpdir -L$gmpdir/.libs -lgmp" GMP_LIBS=$gmpdir/.libs/libgmp.so \
+	                       NETTLE_CFLAGS=-I$nettledir NETTLE_LIBS="-L$nettledir -lnettle" \
+	                       HOGWEED_CFLAGS=-I$nettledir HOGWEED_LIBS="-L$nettledir -lhogweed -lnettle $gmpdir/.libs/libgmp.so" \
+         && make $makeflags)
+}
+
+config_openldap ()
+{
+    download $openldap ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release/$openldap.tgz
+    cp $jpeg/ltmain.sh $jpeg/config.guess $jpeg/config.sub $openldap/build
+    (cd $openldap && aclocal && autoconf && $run_configure --with-yielding_select=yes --disable-bdb --disable-hdb ac_cv_func_memcmp_working=yes CPPFLAGS=-DANDROID CC=$host-gcc && make $makeflags)
+}
+
+config_mpeg ()
+{
+    version=$(expr $mpeg : '.*-\([0-9.]\+\)$')
+    download $mpeg $mpeg.tar.bz2 https://sourceforge.net/projects/mpg123/files/mpg123/$version/$mpeg.tar.bz2/download
+    (cd $mpeg && $run_configure ac_cv_func_mmap_fixed_mapped=yes && make $makeflags)
+}
+
+config_cups ()
+{
+    version=v$(expr $cups : '.*-\([0-9.]\+\)$')
+    download $cups $cups-source.tar.gz https://github.com/apple/cups/releases/download/$version/$cups-source.tar.gz
+    gnutlsdir=$(pwd)/$gnutls
+    (cd $cups && patch -p1 -s <$sourcedir/cups.diff && $run_configure --disable-gssapi GNUTLS_CFLAGS="-I$gnutlsdir/lib/includes" GNUTLS_LIBS="-L$gnutlsdir/lib/.libs -lgnutls" PKGCONFIG=/bin/false && cd cups && make $makeflags libs)
+}
+
+config_wine_tools ()
+{
+    mkdir tools
+    (cd tools && ../wine/configure --without-x --enable-win64 $silent && make $makeflags __tooldeps__)
+}
+
+config_wine ()
+{
+    test -d toolchain || config_toolchain
+    test -d $png || config_png
+    test -d $jpeg || config_jpeg
+    test -d $freetype || config_freetype
+    test -d $lcms2 || config_lcms2
+    test -d $tiff || config_tiff
+    test -d $xml2 || config_xml2
+    test -d $xslt || config_xslt
+    test -d $gmp || config_gmp
+    test -d $nettle || config_nettle
+    test -d $gnutls || config_gnutls
+    test -d $openldap || config_openldap
+    test -d $mpeg || config_mpeg
+    test -d $cups || config_cups
+    rm -rf wine
+    mkdir wine
+    (cd wine && ../../wine/configure $silent --host=$host --with-wine-tools=../../tools CC=$cc \
+                FREETYPE_CFLAGS="-I../$freetype/include" \
+                FREETYPE_LIBS="-L../$freetype/objs/.libs -lfreetype -L../$png/.libs -lpng16" \
+                LCMS2_CFLAGS="-I../$lcms2/include" \
+                LCMS2_LIBS="-L../$lcms2/src/.libs -llcms2" \
+                PNG_CFLAGS="-I../$png" \
+                PNG_LIBS="-L../$png/.libs -lpng16" \
+                ac_cv_lib_soname_png="libpng16.so" \
+                JPEG_CFLAGS="-I../$jpeg" \
+                JPEG_LIBS="-L../$jpeg/.libs -ljpeg" \
+                ac_cv_lib_soname_jpeg="libwjpeg.so" \
+                TIFF_CFLAGS="-I../$tiff/libtiff" \
+                TIFF_LIBS="-L../$tiff/libtiff/.libs -ltiff" \
+                XML2_CFLAGS="-I../$xml2/include" \
+                XML2_LIBS="-L../$xml2/.libs -lxml2" \
+                XSLT_CFLAGS="-I../$xml2/include -I../$xslt" \
+                XSLT_LIBS="-L../$xslt/libxslt/.libs -L../$xml2/.libs -lxml2" \
+                GNUTLS_CFLAGS="-I../$gnutls/lib/includes" \
+                GNUTLS_LIBS="-L../$gnutls/lib/.libs -lgnutls -L../$gmp/.libs -lgmp" \
+                LDAP_CFLAGS="-I../$openldap/include" \
+                LDAP_LIBS="-L../$openldap/libraries/liblber/.libs -L../$openldap/libraries/libldap_r/.libs -lldap_r-2.4 -llber-2.4" \
+                MPG123_CFLAGS="-I../$mpeg/src/libmpg123" \
+                MPG123_LIBS="-L../$mpeg/src/libmpg123/.libs -lmpg123" \
+                CUPS_CFLAGS="-I../$cups" \
+                CUPS_LIBS="-L../$cups/cups -lcups -L../$gnutls/lib/.libs -lgnutls -L../$gmp/.libs -lgmp")
+}
+
+build_all ()
+{
+    test -d wine || config_wine
+    (cd wine && make $makeflags)
+}
+
+install_all ()
+{
+    test -d wine || config_wine
+    cd wine
+    destdir=$(pwd)/dlls/wineandroid.drv
+    srcdir=../../wine
+    install=$srcdir/tools/install-sh
+    rm -rf $destdir/assets assets-tmp $destdir/lib
+    make $makeflags all install-lib DESTDIR=$(pwd) prefix=/assets-tmp
+
+    for i in \
+        ../$png/.libs/libpng16.so \
+        ../$jpeg/.libs/libwjpeg.so \
+        ../$freetype/objs/.libs/libfreetype.so \
+        ../$lcms2/src/.libs/liblcms2.so \
+        ../$tiff/libtiff/.libs/libtiff.so \
+        ../$xml2/.libs/libxml2.so \
+        ../$xslt/libxslt/.libs/libxslt.so \
+        ../$gmp/.libs/libgmp.so \
+        ../$gnutls/lib/.libs/libgnutls.so \
+        ../$openldap/libraries/liblber/.libs/liblber-2.4.so \
+        ../$openldap/libraries/libldap_r/.libs/libldap_r-2.4.so \
+        ../$mpeg/src/libmpg123/.libs/libmpg123.so \
+        ../$cups/cups/libcups.so
+    do
+        STRIPPROG=$host-strip $install -s $i $destdir/lib/$exec_prefix/$(basename $i)
+    done
+
+    $install -m 644 $sourcedir/LICENSE.txt assets-tmp/LICENSE.txt
+    mv assets-tmp $destdir/assets
+
+    (cd $destdir && gradle -q -Psrcdir=$srcdir -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxPermSize=512m" assembleDebug)
+    mv $destdir/build/outputs/apk/wine-debug.apk ../../wine-${release:-debug}-$arch.apk
+}
+
+test -z "$release" || rm -rf $basedir
+test -d $basedir || mkdir $basedir
+cd $basedir
+
+config_sdk
+test -d $android_ndk || config_ndk
+test -d $gradle || config_gradle
+test -d $llvm_mingw || config_llvm_mingw
+
+test -d wine || git clone $winetree
+test -z "$release" || (cd wine && git checkout wine-$release)
+test -d $winetools || config_wine_tools
+
+arch=arm
+test -d $arch || mkdir $arch
+host=arm-linux-androideabi
+exec_prefix=armeabi-v7a
+
+(cd $arch
+PATH=$default_path:$basedir/$llvm_mingw/bin:$basedir/$gradle/bin:$basedir/$arch/toolchain/bin
+run_configure="./configure $silent --host=$host PKG_CONFIG=false"
+install_all)

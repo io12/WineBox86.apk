@@ -1,0 +1,119 @@
+diff -ur cups-2.3.3.orig/config-scripts/cups-sharedlibs.m4 cups-2.3.3/config-scripts/cups-sharedlibs.m4
+--- cups-2.3.3.orig/config-scripts/cups-sharedlibs.m4	2020-04-27 20:04:29.000000000 +0200
++++ cups-2.3.3/config-scripts/cups-sharedlibs.m4	2020-12-09 11:23:58.182435987 +0100
+@@ -29,6 +29,15 @@
+ 			DSOXX="\$(CXX)"
+ 			DSOFLAGS="$DSOFLAGS -Wl,-h\`basename \$@\` -G"
+ 			;;
++		linux-android*)
++			LIBCUPS="lib$cupsbase.so"
++			if test "x$cupsimagebase" != x; then
++				LIBCUPSIMAGE="lib$cupsimagebase.so"
++			fi
++			DSO="\$(CC)"
++			DSOXX="\$(CXX)"
++			DSOFLAGS="$DSOFLAGS -shared \$(OPTIM)"
++			;;
+ 		linux* | gnu* | *bsd*)
+ 			LIBCUPS="lib$cupsbase.so.2"
+ 			if test "x$cupsimagebase" != x; then
+diff -ur cups-2.3.3.orig/config-scripts/cups-ssl.m4 cups-2.3.3/config-scripts/cups-ssl.m4
+--- cups-2.3.3.orig/config-scripts/cups-ssl.m4	2020-04-27 20:04:29.000000000 +0200
++++ cups-2.3.3/config-scripts/cups-ssl.m4	2020-12-09 11:12:41.389901875 +0100
+@@ -45,6 +45,12 @@
+ 	    SSLFLAGS=`$PKGCONFIG --cflags gnutls`
+ 	    AC_DEFINE(HAVE_SSL)
+ 	    AC_DEFINE(HAVE_GNUTLS)
++	elif test -n "$GNUTLS_CFLAGS" -a -n "$GNUTLS_LIBS"; then
++	    have_ssl=1
++	    SSLLIBS=$GNUTLS_LIBS
++	    SSLFLAGS=$GNUTLS_CFLAGS
++	    AC_DEFINE(HAVE_SSL)
++	    AC_DEFINE(HAVE_GNUTLS)
+ 	elif test "x$LIBGNUTLSCONFIG" != x; then
+ 	    have_ssl=1
+ 	    SSLLIBS=`$LIBGNUTLSCONFIG --libs`
+diff -ur cups-2.3.3.orig/configure cups-2.3.3/configure
+--- cups-2.3.3.orig/configure	2020-04-27 20:04:29.000000000 +0200
++++ cups-2.3.3/configure	2020-12-09 11:24:31.907224437 +0100
+@@ -6511,6 +6511,15 @@
+ 			DSOXX="\$(CXX)"
+ 			DSOFLAGS="$DSOFLAGS -Wl,-h\`basename \$@\` -G"
+ 			;;
++		linux-android*)
++			LIBCUPS="lib$cupsbase.so"
++			if test "x$cupsimagebase" != x; then
++				LIBCUPSIMAGE="lib$cupsimagebase.so"
++			fi
++			DSO="\$(CC)"
++			DSOXX="\$(CXX)"
++			DSOFLAGS="$DSOFLAGS -shared \$(OPTIM)"
++			;;
+ 		linux* | gnu* | *bsd*)
+ 			LIBCUPS="lib$cupsbase.so.2"
+ 			if test "x$cupsimagebase" != x; then
+@@ -8290,6 +8299,14 @@
+ 	    $as_echo "#define HAVE_SSL 1" >>confdefs.h
+ 
+ 	    $as_echo "#define HAVE_GNUTLS 1" >>confdefs.h
++
++	elif test -n "$GNUTLS_CFLAGS" -a -n "$GNUTLS_LIBS"; then
++	    have_ssl=1
++	    SSLLIBS=$GNUTLS_LIBS
++	    SSLFLAGS=$GNUTLS_CFLAGS
++	    $as_echo "#define HAVE_SSL 1" >>confdefs.h
++
++	    $as_echo "#define HAVE_GNUTLS 1" >>confdefs.h
+ 
+ 	elif test "x$LIBGNUTLSCONFIG" != x; then
+ 	    have_ssl=1
+diff -ur cups-2.3.3.orig/cups/Makefile cups-2.3.3/cups/Makefile
+--- cups-2.3.3.orig/cups/Makefile	2020-04-27 20:04:29.000000000 +0200
++++ cups-2.3.3/cups/Makefile	2020-12-09 11:27:09.498901365 +0100
+@@ -373,6 +373,16 @@
+ 
+ 
+ #
++# libcups.so
++#
++
++libcups.so:	$(LIBOBJS)
++	echo Linking $@...
++	$(DSO) $(ARCHFLAGS) $(DSOFLAGS) -o $@ $(LIBOBJS) $(LIBGSSAPI) \
++		$(SSLLIBS) $(DNSSDLIBS) $(COMMONLIBS) $(LIBZ)
++
++
++#
+ # libcups.2.dylib
+ #
+ 
+@@ -439,6 +449,15 @@
+ 
+ 
+ #
++# libcupsimage.so
++#
++
++libcupsimage.so:	$(IMAGEOBJS) libcups.so
++	echo Linking $@...
++	$(DSO) $(ARCHFLAGS) $(ALL_DSOFLAGS) -o $@ $(IMAGEOBJS) $(LINKCUPS)
++
++
++#
+ # libcupsimage.2.dylib
+ #
+ 
+diff -ur cups-2.3.3.orig/cups/thread.c cups-2.3.3/cups/thread.c
+--- cups-2.3.3.orig/cups/thread.c	2020-04-27 20:04:29.000000000 +0200
++++ cups-2.3.3/cups/thread.c	2020-12-09 11:12:41.393901979 +0100
+@@ -153,7 +153,9 @@
+ void
+ _cupsThreadCancel(_cups_thread_t thread)/* I - Thread ID */
+ {
+-  pthread_cancel(thread);
++#ifndef __ANDROID__
++    pthread_cancel(thread);
++#endif
+ }
+ 
+ 
