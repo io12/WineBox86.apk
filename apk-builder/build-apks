@@ -66,10 +66,20 @@ download ()
     esac
 }
 
-config_sdk ()
+config_sdk_tools ()
 {
-    download android_sdk https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
-    download android_sdk https://dl.google.com/android/repository/platform-tools_r31.0.2-linux.zip
+    mkdir -p android_sdk
+    cd android_sdk
+    download tools https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+    cd ..
+}
+
+config_sdk_platform_tools ()
+{
+    mkdir -p android_sdk
+    cd android_sdk
+    download platform-tools https://dl.google.com/android/repository/platform-tools_r31.0.2-linux.zip
+    cd ..
 }
 
 config_ndk ()
@@ -291,7 +301,8 @@ test -z "$release" || rm -rf $basedir
 test -d $basedir || mkdir $basedir
 cd $basedir
 
-config_sdk
+test -d android_sdk/tools || config_sdk_tools
+test -d android_sdk/platform-tools || config_sdk_platform_tools
 test -d $android_ndk || config_ndk
 test -d $gradle || config_gradle
 test -d $llvm_mingw || config_llvm_mingw
