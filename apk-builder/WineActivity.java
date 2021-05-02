@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -167,16 +168,16 @@ public class WineActivity extends Activity
                          "/desktop=shell,,android",
                          cmdline };
 
-	Log.i( LOGTAG, "Running wine with cmd: " + cmd.toString() + ", env: " + env.toString() );
-	try
-	{
-		int exitCode = Runtime.getRuntime().exec( cmd, env ).waitFor();
-		Log.i( LOGTAG, "Wine exited with code " + exitCode );
-	}
-	catch (Exception e)
-	{
-		Log.e( LOGTAG, "Failed running wine process: " + e );
-	}
+        Log.i( LOGTAG, "Running wine with cmd: " + Arrays.toString(cmd) + ", env: " + Arrays.toString(env) );
+        try
+        {
+            int exitCode = Runtime.getRuntime().exec( cmd, env ).waitFor();
+            Log.i( LOGTAG, "Wine exited with code " + exitCode );
+        }
+        catch (Exception e)
+        {
+            Log.e( LOGTAG, "Failed running wine process: " + e );
+        }
     }
 
     private void createProgressDialog( final int max, final String message )
