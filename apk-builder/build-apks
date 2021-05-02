@@ -293,6 +293,25 @@ jerry_rig_box86 ()
     cp "$sourcedir/wine-wrapper.sh" "$assets_arm_bin/wine"
 }
 
+# Rebuild native libraries for box86 to wrap
+rebuild_arm_libs ()
+{
+    host=arm-linux-androideabi
+    run_configure="./configure $silent --host=$host PKG_CONFIG=false"
+    config_png
+    config_jpeg
+    config_freetype
+    config_lcms2
+    config_tiff
+    config_xml2
+    config_xslt
+    config_gmp
+    config_gnutls
+    config_openldap
+    config_mpeg
+    config_cups
+}
+
 install_all ()
 {
     test -d wine || config_wine
@@ -302,6 +321,8 @@ install_all ()
     install=$srcdir/tools/install-sh
     rm -rf $destdir/assets assets-tmp $destdir/lib
     make $makeflags all install-lib DESTDIR=$(pwd) prefix=/assets-tmp
+
+    rebuild_arm_libs
 
     for i in \
         ../$png/.libs/libpng16.so \
@@ -318,7 +339,7 @@ install_all ()
         ../$mpeg/src/libmpg123/.libs/libmpg123.so \
         ../$cups/cups/libcups.so
     do
-        STRIPPROG=$host-strip $install -s $i $destdir/lib/$exec_prefix/$(basename $i)
+        STRIPPROG=arm-linux-androideabi-strip $install -s $i $destdir/lib/armeabi-v7a/$(basename $i)
     done
 
     $install -m 644 $sourcedir/LICENSE.txt assets-tmp/LICENSE.txt
@@ -349,7 +370,6 @@ test -d box86 || config_box86
 arch=x86
 test -d $arch || mkdir $arch
 host=i686-linux-android
-exec_prefix=x86
 
 (cd $arch
 PATH=$default_path:$basedir/$llvm_mingw/bin:$basedir/$gradle/bin:$basedir/$arch/toolchain/bin
