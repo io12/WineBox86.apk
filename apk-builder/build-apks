@@ -107,13 +107,13 @@ config_llvm_mingw ()
 config_png ()
 {
     download $png $png.tar.xz https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/$png.tar.xz/download
-    (cd $png && $run_configure && make $makeflags)
+    (cd $png && $run_configure && make clean && make $makeflags)
 }
 
 config_jpeg ()
 {
     download $jpeg http://www.ijg.org/files/jpegsrc.v9d.tar.gz
-    (cd $jpeg && $run_configure && make $makeflags)
+    (cd $jpeg && $run_configure && make clean && make $makeflags)
     # rename libjpeg.so to avoid conflicts with the system one
     cp $jpeg/.libs/libjpeg.so $jpeg/.libs/libwjpeg.so
 }
@@ -123,40 +123,40 @@ config_freetype ()
     test -d $png || config_png
     download $freetype http://download.savannah.gnu.org/releases/freetype/$freetype.tar.xz
     pngdir=$(pwd)/$png
-    (cd $freetype && $run_configure LIBPNG_CFLAGS=-I$pngdir LIBPNG_LIBS="-L$pngdir/.libs -lpng16" && make $makeflags)
+    (cd $freetype && $run_configure LIBPNG_CFLAGS=-I$pngdir LIBPNG_LIBS="-L$pngdir/.libs -lpng16" && make clean && make $makeflags)
 }
 
 config_lcms2 ()
 {
     version=$(expr $lcms2 : '.*-\([0-9.]\+\)$')
     download $lcms2 $lcms2.tar.gz https://sourceforge.net/projects/lcms/files/lcms/$version/$lcms2.tar.gz/download
-    (cd $lcms2 && $run_configure && make $makeflags)
+    (cd $lcms2 && $run_configure && make clean && make $makeflags)
 }
 
 config_tiff ()
 {
     download $tiff https://download.osgeo.org/libtiff/$tiff.zip
     cp ../wine/tools/config.sub ../wine/tools/config.guess $tiff/config
-    (cd $tiff && $run_configure && make $makeflags)
+    (cd $tiff && $run_configure && make clean && make $makeflags)
 }
 
 config_xml2 ()
 {
     download $xml2 ftp://xmlsoft.org/libxml2/$xml2.tar.gz
-    (cd $xml2 && $run_configure --without-python && make $makeflags libxml2.la)
+    (cd $xml2 && $run_configure --without-python && make clean && make $makeflags libxml2.la)
 }
 
 config_xslt ()
 {
     test -d $xml2 || config_xml2
     download $xslt ftp://xmlsoft.org/libxml2/$xslt.tar.gz
-    (cd $xslt && $run_configure --without-python --with-libxml-src=../$xml2 && make $makeflags)
+    (cd $xslt && $run_configure --without-python --with-libxml-src=../$xml2 && make clean && make $makeflags)
 }
 
 config_gmp ()
 {
     download $gmp https://gmplib.org/download/gmp/$gmp.tar.xz
-    (cd $gmp && $run_configure --disable-static && make $makeflags)
+    (cd $gmp && $run_configure --disable-static && make clean && make $makeflags)
 }
 
 config_nettle ()
@@ -164,7 +164,7 @@ config_nettle ()
     test -d $gmp || config_gmp
     download $nettle https://ftp.gnu.org/gnu/nettle/$nettle.tar.gz
     gmpdir=$(pwd)/$gmp
-    (cd $nettle && $run_configure --disable-shared --disable-documentation CPPFLAGS=-I$gmpdir LDFLAGS=-L$gmpdir/.libs && make $makeflags)
+    (cd $nettle && $run_configure --disable-shared --disable-documentation CPPFLAGS=-I$gmpdir LDFLAGS=-L$gmpdir/.libs && make clean && make $makeflags)
 }
 
 config_gnutls ()
@@ -181,21 +181,21 @@ config_gnutls ()
                                GMP_CFLAGS="-I$gmpdir -L$gmpdir/.libs -lgmp" GMP_LIBS=$gmpdir/.libs/libgmp.so \
 	                       NETTLE_CFLAGS=-I$nettledir NETTLE_LIBS="-L$nettledir -lnettle" \
 	                       HOGWEED_CFLAGS=-I$nettledir HOGWEED_LIBS="-L$nettledir -lhogweed -lnettle $gmpdir/.libs/libgmp.so" \
-         && make $makeflags)
+         && make clean && make $makeflags)
 }
 
 config_openldap ()
 {
     download $openldap ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release/$openldap.tgz
     cp $jpeg/ltmain.sh $jpeg/config.guess $jpeg/config.sub $openldap/build
-    (cd $openldap && aclocal && autoconf && $run_configure --with-yielding_select=yes --disable-bdb --disable-hdb ac_cv_func_memcmp_working=yes CPPFLAGS=-DANDROID CC=$host-gcc && make $makeflags)
+    (cd $openldap && aclocal && autoconf && $run_configure --with-yielding_select=yes --disable-bdb --disable-hdb ac_cv_func_memcmp_working=yes CPPFLAGS=-DANDROID CC=$host-gcc && make clean && make $makeflags)
 }
 
 config_mpeg ()
 {
     version=$(expr $mpeg : '.*-\([0-9.]\+\)$')
     download $mpeg $mpeg.tar.bz2 https://sourceforge.net/projects/mpg123/files/mpg123/$version/$mpeg.tar.bz2/download
-    (cd $mpeg && $run_configure ac_cv_func_mmap_fixed_mapped=yes && make $makeflags)
+    (cd $mpeg && $run_configure ac_cv_func_mmap_fixed_mapped=yes && make clean && make $makeflags)
 }
 
 config_cups ()
@@ -203,7 +203,7 @@ config_cups ()
     version=v$(expr $cups : '.*-\([0-9.]\+\)$')
     download $cups $cups-source.tar.gz https://github.com/apple/cups/releases/download/$version/$cups-source.tar.gz
     gnutlsdir=$(pwd)/$gnutls
-    (cd $cups && patch -p1 -s <$sourcedir/cups.diff && $run_configure --disable-gssapi GNUTLS_CFLAGS="-I$gnutlsdir/lib/includes" GNUTLS_LIBS="-L$gnutlsdir/lib/.libs -lgnutls" PKGCONFIG=/bin/false && cd cups && make $makeflags libs)
+    (cd $cups && patch -p1 -s <$sourcedir/cups.diff && $run_configure --disable-gssapi GNUTLS_CFLAGS="-I$gnutlsdir/lib/includes" GNUTLS_LIBS="-L$gnutlsdir/lib/.libs -lgnutls" PKGCONFIG=/bin/false && cd cups && make clean && make $makeflags libs)
 }
 
 config_wine_tools ()
