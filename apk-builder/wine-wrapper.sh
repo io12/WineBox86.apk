@@ -6,4 +6,4 @@
 assets_arm_bin=$(dirname "$0")
 
 # Run x86 Wine with Box86
-exec "$assets_arm_bin/box86" "$assets_arm_bin/wine-x86"
+exec "$assets_arm_bin/box86" "$assets_arm_bin/wine-x86" "$@"
