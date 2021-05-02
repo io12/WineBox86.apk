@@ -237,7 +237,7 @@ config_wine ()
     test -d $cups || config_cups
 
     # Copy patched java app
-    cp -f $sourcedir/WineActivity.java ../../wine/dlls/wineandroid.drv/
+    cp -f $sourcedir/WineActivity.java ../wine/dlls/wineandroid.drv/
 
     rm -rf wine
     mkdir wine
