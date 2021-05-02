@@ -106,12 +106,14 @@ config_llvm_mingw ()
 
 config_png ()
 {
+    rm -rf $png
     download $png $png.tar.xz https://sourceforge.net/projects/libpng/files/libpng16/1.6.37/$png.tar.xz/download
     (cd $png && $run_configure && make clean && make $makeflags)
 }
 
 config_jpeg ()
 {
+    rm -rf $jpeg
     download $jpeg http://www.ijg.org/files/jpegsrc.v9d.tar.gz
     (cd $jpeg && $run_configure && make clean && make $makeflags)
     # rename libjpeg.so to avoid conflicts with the system one
@@ -120,6 +122,7 @@ config_jpeg ()
 
 config_freetype ()
 {
+    rm -rf $freetype
     test -d $png || config_png
     download $freetype http://download.savannah.gnu.org/releases/freetype/$freetype.tar.xz
     pngdir=$(pwd)/$png
@@ -128,6 +131,7 @@ config_freetype ()
 
 config_lcms2 ()
 {
+    rm -rf $lcms2
     version=$(expr $lcms2 : '.*-\([0-9.]\+\)$')
     download $lcms2 $lcms2.tar.gz https://sourceforge.net/projects/lcms/files/lcms/$version/$lcms2.tar.gz/download
     (cd $lcms2 && $run_configure && make clean && make $makeflags)
@@ -135,6 +139,7 @@ config_lcms2 ()
 
 config_tiff ()
 {
+    rm -rf $tiff
     download $tiff https://download.osgeo.org/libtiff/$tiff.zip
     cp ../wine/tools/config.sub ../wine/tools/config.guess $tiff/config
     (cd $tiff && $run_configure && make clean && make $makeflags)
@@ -142,12 +147,14 @@ config_tiff ()
 
 config_xml2 ()
 {
+    rm -rf $xml2
     download $xml2 ftp://xmlsoft.org/libxml2/$xml2.tar.gz
     (cd $xml2 && $run_configure --without-python && make clean && make $makeflags libxml2.la)
 }
 
 config_xslt ()
 {
+    rm -rf $xslt
     test -d $xml2 || config_xml2
     download $xslt ftp://xmlsoft.org/libxml2/$xslt.tar.gz
     (cd $xslt && $run_configure --without-python --with-libxml-src=../$xml2 && make clean && make $makeflags)
@@ -155,12 +162,14 @@ config_xslt ()
 
 config_gmp ()
 {
+    rm -rf $gmp
     download $gmp https://gmplib.org/download/gmp/$gmp.tar.xz
     (cd $gmp && $run_configure --disable-static && make clean && make $makeflags)
 }
 
 config_nettle ()
 {
+    rm -rf $nettle
     test -d $gmp || config_gmp
     download $nettle https://ftp.gnu.org/gnu/nettle/$nettle.tar.gz
     gmpdir=$(pwd)/$gmp
@@ -169,6 +178,7 @@ config_nettle ()
 
 config_gnutls ()
 {
+    rm -rf $gnutls
     test -d $nettle || config_nettle
     version=v$(expr $gnutls : '.*-\([0-9]\+\.[0-9]\+\)')
     download $gnutls https://www.gnupg.org/ftp/gcrypt/gnutls/$version/$gnutls.tar.xz
@@ -186,6 +196,7 @@ config_gnutls ()
 
 config_openldap ()
 {
+    rm -rf $openldap
     download $openldap ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release/$openldap.tgz
     cp $jpeg/ltmain.sh $jpeg/config.guess $jpeg/config.sub $openldap/build
     (cd $openldap && aclocal && autoconf && $run_configure --with-yielding_select=yes --disable-bdb --disable-hdb ac_cv_func_memcmp_working=yes CPPFLAGS=-DANDROID CC=$host-gcc && make clean && make $makeflags)
@@ -193,6 +204,7 @@ config_openldap ()
 
 config_mpeg ()
 {
+    rm -rf $mpeg
     version=$(expr $mpeg : '.*-\([0-9.]\+\)$')
     download $mpeg $mpeg.tar.bz2 https://sourceforge.net/projects/mpg123/files/mpg123/$version/$mpeg.tar.bz2/download
     (cd $mpeg && $run_configure ac_cv_func_mmap_fixed_mapped=yes && make clean && make $makeflags)
@@ -200,6 +212,7 @@ config_mpeg ()
 
 config_cups ()
 {
+    rm -rf $cups
     version=v$(expr $cups : '.*-\([0-9.]\+\)$')
     download $cups $cups-source.tar.gz https://github.com/apple/cups/releases/download/$version/$cups-source.tar.gz
     gnutlsdir=$(pwd)/$gnutls
