@@ -282,9 +282,6 @@ jerry_rig_box86 ()
     mv "$destdir/lib/x86" "$destdir/lib/armeabi-v7a"
     mv "$destdir/assets/x86" "$destdir/assets/armeabi-v7a"
 
-    # This needs to be moved too for some reason
-    mv "$destdir/lib/armeabi-v7a/lib/wine/i386-unix" "$destdir/lib/armeabi-v7a/lib/wine/arm-unix"
-
     # Copy in Box86
     cp ../../box86/build/box86 "$assets_arm_bin"
 
