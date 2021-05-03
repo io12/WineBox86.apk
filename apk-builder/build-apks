@@ -169,7 +169,8 @@ config_nettle ()
 
 config_gnutls ()
 {
-    test -d $nettle || config_nettle
+    rm -rf $nettle
+    config_nettle
     version=v$(expr $gnutls : '.*-\([0-9]\+\.[0-9]\+\)')
     download $gnutls https://www.gnupg.org/ftp/gcrypt/gnutls/$version/$gnutls.tar.xz
     gmpdir=$(pwd)/$gmp
