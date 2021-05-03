@@ -295,6 +295,7 @@ rebuild_arm_libs ()
 {
     host=arm-linux-androideabi
     run_configure="./configure $silent --host=$host PKG_CONFIG=false"
+    arch=armeabi-v7a config_toolchain
     config_png
     config_jpeg
     config_freetype
