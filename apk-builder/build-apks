@@ -320,7 +320,7 @@ install_all ()
     rm -rf $destdir/assets assets-tmp $destdir/lib
     make $makeflags all install-lib DESTDIR=$(pwd) prefix=/assets-tmp
 
-    cd .. && rebuild_arm_libs
+    (cd .. && rebuild_arm_libs)
 
     for i in \
         ../$png/.libs/libpng16.so \
