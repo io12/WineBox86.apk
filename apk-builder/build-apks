@@ -280,7 +280,6 @@ jerry_rig_box86 ()
     assets_arm_bin="$destdir/assets/armeabi-v7a/bin"
 
     # Move x86 dirs to armeabi-v7a so that ARM Android doesn't reject the APK
-    mv "$destdir/lib/x86" "$destdir/lib/armeabi-v7a"
     mv "$destdir/assets/x86" "$destdir/assets/armeabi-v7a"
 
     # Copy in Box86
