@@ -180,8 +180,8 @@ let
       # Point gradle to offline repo
       sed -i \
         -e "s#jcenter()#maven { url '${androidWineGradleDeps}' }#g" \
-	-e "s/@PACKAGE_VERSION@/7.0-rc1/g" \
-	dlls/wineandroid.drv/build.gradle
+        -e "s/@PACKAGE_VERSION@/7.0-rc1/g" \
+        dlls/wineandroid.drv/build.gradle
 
       # Copy any non-wine libs
       mkdir -p dlls/wineandroid.drv/lib/armeabi-v7a
