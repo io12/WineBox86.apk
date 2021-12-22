@@ -38,6 +38,18 @@ let
                   "--disable-tests"
                 ];
               });
+            zlib = pkgs.zlib.overrideAttrs (oldAttrs:
+              pkgs.lib.optionalAttrs isAndroid {
+                # https://stackoverflow.com/questions/53129109/android-studio-gradle-is-not-packing-my-shared-library-named-mylib-so-1-in-apk
+                postPatch = oldAttrs.postPatch + ''
+                  substituteInPlace configure --replace 'libz.so.1' 'libz.so'
+                '';
+              });
+            nettle = pkgs.nettle.overrideAttrs (oldAttrs:
+              pkgs.lib.optionalAttrs isAndroid {
+                # https://stackoverflow.com/questions/53129109/android-studio-gradle-is-not-packing-my-shared-library-named-mylib-so-1-in-apk
+                configureFlags = oldAttrs.configureFlags ++ [ "LIBNETTLE_SONAME=libnettle.so" ];
+              });
           };
       };
     };
@@ -148,6 +160,7 @@ let
       [ pkgs.flex pkgs.bison androidGccSymlink llvmMingw fakeGradle wineTools ];
     configureFlags = [ "--with-wine-tools=${wineTools}/tools-build" ];
     installTargets = [ "install-lib" ];
+    dontFixup = true;
   };
 
   androidWine = androidPkgs.stdenv.mkDerivation {
@@ -159,6 +172,8 @@ let
       androidSdk
       pkgs.librsvg
       androidWineAssets
+      androidPkgs.zlib.out
+      androidPkgs.bzip2.out
       androidPkgs.libpng.out
       androidPkgs.libjpeg_original.out
       androidPkgs.freetype.out
@@ -167,6 +182,7 @@ let
       androidPkgs.libxml2.out
       androidPkgs.libxslt.out
       androidPkgs.gmp.out
+      androidPkgs.nettle.out
       androidPkgs.gnutls.out
     ];
     ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
@@ -186,6 +202,8 @@ let
       # Copy any non-wine libs
       mkdir -p dlls/wineandroid.drv/lib/armeabi-v7a
       cp \
+        ${androidPkgs.zlib.out}/lib/libz.so \
+        ${androidPkgs.bzip2.out}/lib/libbz2.so \
         ${androidPkgs.libpng.out}/lib/libpng16.so \
         ${androidPkgs.libjpeg_original.out}/lib/libjpeg.so \
         ${androidPkgs.freetype.out}/lib/libfreetype.so \
@@ -194,6 +212,7 @@ let
         ${androidPkgs.libxml2.out}/lib/libxml2.so \
         ${androidPkgs.libxslt.out}/lib/libxslt.so \
         ${androidPkgs.gmp.out}/lib/libgmp.so \
+        ${androidPkgs.nettle.out}/lib/libnettle.so \
         ${androidPkgs.gnutls.out}/lib/libgnutls.so \
         dlls/wineandroid.drv/lib/armeabi-v7a
 
