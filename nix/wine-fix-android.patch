@@ -1,0 +1,13 @@
+diff --git a/configure b/configure
+index 5c3536900d1..aad9a99d560 100755
+--- a/configure
++++ b/configure
+@@ -10390,7 +10390,7 @@ fi
+     TOP_INSTALL_LIB="$TOP_INSTALL_LIB libs/wine/libwine.$libwine_version.dylib libs/wine/libwine.$libwine_soversion.dylib"
+     ;;
+ 
+-  linux-android*)
++  ---*)
+ 
+ printf "%s\n" "#define _GNU_SOURCE 1" >>confdefs.h
+ 

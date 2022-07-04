@@ -1,0 +1,54 @@
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index 96301b1..1fbab28 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -868,7 +868,10 @@ static NTSTATUS map_so_dll( const IMAGE_NT_HEADERS *nt_descr, HMODULE module )
+                   + sizeof(IMAGE_NT_HEADERS)
+                   + nb_sections * sizeof(IMAGE_SECTION_HEADER));
+ 
+-    if (anon_mmap_fixed( addr, size, PROT_READ | PROT_WRITE, 0 ) != addr) return STATUS_NO_MEMORY;
++    if (anon_mmap_fixed( addr, size, PROT_READ | PROT_WRITE, 0 ) != addr) {
++        ERR( "IO12 anon_mmap_fixed failed\n" );
++        return STATUS_NO_MEMORY;
++    }
+ 
+     dos = (IMAGE_DOS_HEADER *)addr;
+     nt  = (IMAGE_NT_HEADERS *)((BYTE *)(dos + 1) + sizeof(builtin_signature));
+@@ -1280,6 +1283,7 @@ static NTSTATUS dlopen_dll( const char *so_name, UNICODE_STRING *nt_name, void *
+     }
+     if (callback_module != (void *)1)  /* callback was called */
+     {
++        ERR( "IO12 callback called\n" );
+         if (!callback_module) return STATUS_NO_MEMORY;
+         WARN( "got old-style builtin library %s, constructors won't work\n", debugstr_a(so_name) );
+         module = callback_module;
+@@ -1287,10 +1291,12 @@ static NTSTATUS dlopen_dll( const char *so_name, UNICODE_STRING *nt_name, void *
+     }
+     else if ((nt = dlsym( handle, "__wine_spec_nt_header" )))
+     {
++        ERR( "IO12 got __wine_spec_nt_header\n" );
+         module = (HMODULE)((nt->OptionalHeader.ImageBase + 0xffff) & ~0xffff);
+         if (get_builtin_so_handle( module )) goto already_loaded;
+         if (map_so_dll( nt, module ))
+         {
++            ERR( "IO12 failed map_so_dll()\n" );
+             dlclose( handle );
+             return STATUS_NO_MEMORY;
+         }
+@@ -1318,6 +1324,7 @@ static NTSTATUS dlopen_dll( const char *so_name, UNICODE_STRING *nt_name, void *
+     return STATUS_SUCCESS;
+ 
+ already_loaded:
++    ERR( "IO12 already loaded\n" );
+     fill_builtin_image_info( module, image_info );
+     *ret_module = module;
+     dlclose( handle );
+@@ -1512,7 +1519,7 @@ static NTSTATUS open_builtin_so_file( const char *name, OBJECT_ATTRIBUTES *attr,
+         if (!status) virtual_fill_image_information( &info, image_info );
+         else if (status != STATUS_IMAGE_ALREADY_LOADED)
+         {
+-            ERR( "failed to load .so lib %s\n", debugstr_a(name) );
++            ERR( "IO12 failed to load .so lib %s: %x\n", debugstr_a(name), status );
+             status = STATUS_PROCEDURE_NOT_FOUND;
+         }
+     }

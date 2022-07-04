@@ -1,0 +1,30 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ff08d1e2..b04318e2 100755
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -127,6 +127,8 @@ elseif(PHYTIUM)
+     add_definitions(-DPHYTIUM)
+     add_definitions(-pipe -march=armv8.1-a+simd+crypto -mfpu=neon-fp-armv8 -mfloat-abi=hard)
+     set(CMAKE_ASM_FLAGS  "-pipe -march=armv8.1-a+simd+crypto -mfpu=neon-fp-armv8 -mfloat-abi=hard")
++elseif(ANDROID)
++    add_definitions(-DANDROID)
+ elseif(ARM_DYNAREC)
+     #if DYNAREC is selected alone, without any arch
+     set(CMAKE_ASM_FLAGS  "-pipe -march=armv7-a+simd -mfpu=neon")
+diff --git a/src/wrapped/wrappedlibc.c b/src/wrapped/wrappedlibc.c
+index 9453066d..68ffa692 100755
+--- a/src/wrapped/wrappedlibc.c
++++ b/src/wrapped/wrappedlibc.c
+@@ -2856,10 +2856,12 @@ EXPORT int my_semctl(x86emu_t* emu, int semid, int semnum, int cmd, union semun
+   return  ((iFiiiV_t)f)(semid, semnum, cmd, b);
+ }
+ 
++#ifndef ANDROID
+ EXPORT int my_on_exit(x86emu_t* emu, void* f, void* args)
+ {
+     return on_exit(findon_exitFct(f), args);
+ }
++#endif
+ 
+ 
+ EXPORT char** my_environ = NULL;
